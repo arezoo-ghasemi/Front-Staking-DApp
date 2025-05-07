@@ -1,103 +1,128 @@
+'use client'
 import Image from "next/image";
+import picBack from "../pic/token-staking.png";
+import picCoin from "../pic/Bag.gif";
+import  {tokenSADR, tokenCADR, tokenRABI, tokenSABI, tokenStakingADR, tokenStakingABI} from "../DataFile";
+import { useEffect, useRef, useState } from "react";
+import { ethers } from "ethers";
+
+
+
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const [stakeBalance, setStakeBalance] = useState<number>(0);
+  const [rewardBalance, setRewardBalance] = useState<number>(0);
+  const refStakeInput = useRef<HTMLInputElement | null>(null);
+
+
+
+  const ContractConnect = async(contractAddress: string, contractABI: object[] )=>{
+
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    //@ts-ignore
+    if(window.ethereum){
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      //@ts-ignore
+      const provider = new ethers.BrowserProvider(window.ethereum)
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      //@ts-ignore
+      const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });  
+      if (accounts.length === 0) {
+          console.log("No connected account found!");
+      } else {
+          console.log("Connected account:", accounts[0]);
+      }
+      const signer = await provider.getSigner();
+      const contract = new ethers.Contract(contractAddress, contractABI, signer);
+
+      return [contract, accounts[0]];
+    }
+  }
+
+  useEffect(()=>{
+    const connectCTokenS = async()=>{
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      //@ts-ignore
+      if(window.ethereum){
+        const contractTokenS = await ContractConnect(tokenSADR, tokenSABI);
+        if(contractTokenS){
+          const BalTokenS = await contractTokenS[0].balanceOf(contractTokenS[1]);
+          setStakeBalance(BalTokenS);
+        }
+      }
+    }
+
+    const connectCTokenC = async()=>{
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      //@ts-ignore
+      if(window.ethereum){
+        const contractTokenC = await ContractConnect(tokenCADR, tokenRABI);
+        if(contractTokenC){
+          const BalTokenC = await contractTokenC[0].balanceOf(contractTokenC[1]);
+          setRewardBalance(BalTokenC);
+        }
+      }
+    }
+
+    connectCTokenS();
+    connectCTokenC();
+  });
+
+  const handleStake = async()=>{
+
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    //@ts-ignore
+    if(window.ethereum){
+      const contractTokenS = await ContractConnect(tokenSADR, tokenSABI);
+      if(contractTokenS){
+        if(refStakeInput.current?.value){
+          const Valeth = ethers.parseEther(refStakeInput.current?.value);
+          const res = await contractTokenS[0].approve(tokenStakingADR, Valeth);
+          if(res){
+            const contractStaking = await ContractConnect(tokenStakingADR, tokenStakingABI);
+            if(contractStaking){
+              const Valeth = ethers.parseEther(refStakeInput.current?.value);
+              await contractStaking[0].stakeT(Valeth);
+            }
+          }
+        }else{
+          alert("Plese enter valid value...");
+        }
+      }
+    }
+  }
+
+
+  return (
+    <>
+    <div className="h-dvh overflow-hidden bg-blue-950 relative">
+      <div className="flex justify-center items-center text-2xl font-bold mt-7 border-white border-y-1 mx-7 lg:mx-48 py-3">
+        <h1 className="text-white ">Staking token</h1>
+      </div>
+      <div className="flex flex-col lg:flex-row justify-center items-center gap-14 mt-14">
+        <div className="flex gap-1 ">
+          <Image src={picCoin} alt="picBalance" width={30} height={30}  />
+          <h1 className="text-white">{`Token stake balance: ${stakeBalance}`}</h1>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        <div className="flex gap-1 ">
+          <Image src={picCoin} alt="picBalance" width={30} height={30} />
+          <h1 className="text-white">{`Token reward balance: ${rewardBalance}`}</h1>
+        </div>
+      </div>
+      <div className="flex flex-col  justify-center  items-center mt-14 gap-7">
+        <div className="flex justify-center items-center gap-3">
+          <input ref={refStakeInput} placeholder=" Enter value as a Ether..." className="bg-gray-300 h-8" type="number" name="stakeInput" id="stakeInput" />
+          <button onClick={handleStake} className="text-white py-1 px-7 bg-amber-700 hover:bg-amber-800 hover:cursor-pointer">Stake</button>
+        </div>
+        <div>
+          <button className="text-white py-1 px-14 bg-amber-700 hover:bg-amber-800 hover:cursor-pointer">Get Reward</button>
+        </div>
+      </div>
+      <div>
+        <Image src={picBack} alt="picBack" className="absolute bottom-[-92]" />
+      </div>
     </div>
+    </>
   );
 }
